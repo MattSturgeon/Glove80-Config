@@ -30,7 +30,7 @@ jobs:
 
       - name: Install system dependencies
         # We need rsvg to render SVGs into PNGs
-        run: sudo apt install librsvg2-bin
+        run: sudo apt install inkscape
 
       - name: Install python dependencies
         run: |
@@ -96,15 +96,10 @@ jobs:
         run: |
           cd "${{ env.output_folder }}"
 
-          render() {
-            SVG="$1"
-            PNG="$(basename -s .svg "$SVG").png"
-            rsvg-convert --width="${{ env.png_width }}" --keep-aspect-ratio "$SVG" > "$PNG"
-          }
-          export -f render
-
           SVG_ARR=( *.svg )
-          parallel --jobs 4 render ::: "${SVG_ARR[@]}"
+          parallel --jobs 4 \
+          inkscape --export-type=png --export-background-opacity="0" \
+          ::: "${SVG_ARR[@]}"
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v4
