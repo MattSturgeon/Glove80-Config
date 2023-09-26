@@ -11,6 +11,7 @@ env:
   km_dr_config: config/keymap_drawer.yaml
   keymap_path: config/*.keymap
   output_folder: img
+  png_width: 2048
 
 jobs:
   draw:
@@ -27,12 +28,15 @@ jobs:
           fetch-depth: 1 # Set to 2 if amending, or 1 if creating a new commit
           submodules: recursive
 
+      - name: Install system dependencies
+        # We need rsvg to render SVGs into PNGs
+        run: sudo apt install librsvg2-bin
+
       - name: Install python dependencies
         run: |
           pip install "git+https://github.com/caksoylar/keymap-drawer.git@${{ env.km_dr_version }}"
           pip install pyyaml
 
-      # TODO get keyboads & configs dynamically
       - name: Parse keymap
         run: |
           # TODO set generic vars in one place globally
@@ -87,10 +91,24 @@ jobs:
             python3 .github/workflows/layers.py "$KEYMAP" \
             | parallel --jobs 4 draw "$KEYMAP"
           done
+      
+      - name: Render PNG bitmaps
+        run: |
+          cd "${{ env.output_folder }}"
+
+          render() {
+            SVG="$1"
+            PNG="$(basename -s .svg "$SVG").png"
+            rsvg-convert --width="${{ env.png_width }}" --keep-aspect-ratio "$SVG" > "$PNG"
+          }
+          export -f render
+
+          SVG_ARR=( *.svg )
+          parallel --jobs 4 render ::: "${SVG_ARR[@]}"
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "[Draw] ${{ github.event.head_commit.message || '(Manually triggered)' }}"
-          file_pattern: ${{ env.output_folder }}/*.svg ${{ env.output_folder }}/*.yaml
+          file_pattern: ${{ env.output_folder }}/*.png ${{ env.output_folder }}/*.svg ${{ env.output_folder }}/*.yaml
 
