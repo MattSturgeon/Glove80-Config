@@ -88,16 +88,26 @@
 
           # We have a winner!
           kb="''${matches[0]}"
-          echo "Found keyboard:"
+          echo "Flashing keyboard:"
           echo "$kb"
           indent < "$kb"/INFO_UF2.TXT
-          echo
 
-          # Flash by copying the firmware package
-          gum spin --title "Flashing firmware..." \
-            -- cp -Tfr "${config.packages.firmware}" "$kb" \
-            && echo "Firmaware flashed!" \
-            || echo "Error flashing firmware!"
+          # Ask before flashing...
+          if gum confirm "Are you sure?" \
+              --default="yes" \
+              --affirmative="Flash" \
+              --negative="Cancel"
+          then
+            # Flash by copying the firmware package
+            gum spin --title "Flashing firmware..." \
+              -- cp -Tfr "${config.packages.firmware}" "$kb" \
+              && echo "Firmaware flashed!" \
+              || echo "Error flashing firmware!"
+          else
+            echo "Cancelled"
+          fi
+
+          echo # blankline
         }
 
         # Run the script
