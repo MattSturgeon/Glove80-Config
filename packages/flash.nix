@@ -36,7 +36,9 @@
           if [[ "$OSTYPE" == "linux-gnu"* ]]; then
             # Linux/GNU
             # - /run/media/<user>/<disk>
-            disks=(/run/media/"$(whoami)"/GLV80*)
+            disks+=(/run/media/"$(whoami)"/GLV80*)
+            disks+=(/media/GLV80*)
+            disks+=(/mnt/*)
           elif [[ "$OSTYPE" == "darwin"* ]]; then
             # Mac OSX
             # - /Volumes/<disk>
