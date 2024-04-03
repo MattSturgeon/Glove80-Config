@@ -64,64 +64,59 @@
           done
         }
 
-        flash() {
+        # Flash all keyboards found by `list_keyboards`
+        flash_keyboards() {
           declare -a matches
           readarray -t matches < <(list_keyboards)
-
-          # Assert we found exactly one keyboard
           count="''${#matches[@]}"
-          if [[ "$count" -lt 1 ]]; then
-            # No matches. Exit
-            echo "Error: No Glove80 connected!"
-            return 1
-          elif [[ "$count" -gt 1 ]]; then
-            # Multiple matches. Print them and exit
-            echo "Error: $count Glove80s connected. Expected 1!"
-            for i in "''${!matches[@]}"; do
-              kb="''${matches[$i]}"
-              # Print the relevant lines from INFO_UF2
-              echo "$((i + 1)). $kb"
-              grep --no-filename --color=never Glove80 "$kb"/INFO_UF2.TXT | indent
-            done
-            return 1
-          fi
 
-          # We have a winner!
-          kb="''${matches[0]}"
-          echo "Flashing keyboard:"
-          echo "$kb"
-          indent < "$kb"/INFO_UF2.TXT
+          # Print a summary of what `list_keyboards` has found
+          echo "Found $count keyboards connected."
+          for i in "''${!matches[@]}"; do
+            kb="''${matches[$i]}"
+            # Print the relevant lines from INFO_UF2
+            echo "$((i + 1)). $kb"
+            indent < "$kb"/INFO_UF2.TXT
+          done
+          echo # blankline
+
+          for i in "''${!matches[@]}"; do
+            flash_keyboard "$((i + 1))" "''${matches[$i]}"
+          done
+        }
+
+        # Flash the given keyboard
+        flash_keyboard() {
+          i="$1"
+          kb="$2"
 
           # Ask before flashing...
-          if gum confirm "Are you sure?" \
+          if gum confirm "$i. $kb" \
               --default="yes" \
               --affirmative="Flash" \
               --negative="Cancel"
           then
             # Flash by copying the firmware package
-            gum spin --title "Flashing firmware..." \
+            gum spin --title "Flashing $kb" \
               -- cp -Tfr "${config.packages.firmware}" "$kb" \
-              && echo "Firmaware flashed!" \
-              || echo "Error flashing firmware!"
+              && echo "$i. Flashed $kb" \
+              || echo "$i. Error flashing $kb!"
           else
-            echo "Cancelled"
+            echo "$i. Skipped $kb"
           fi
-
-          echo # blankline
         }
 
         # Run the script
-        flash
+        flash_keyboards
         while
-          gum confirm \
+          gum confirm "Done" \
             --default="no" \
             --affirmative="Run again" \
-            --negative="Quit" \
-            "Flash another keyboard?"
+            --negative="Quit"
         do
           echo # blankline
           echo "Running again"
-          flash
+          flash_keyboards
         done
       '';
     };
