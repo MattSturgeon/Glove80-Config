@@ -8,6 +8,10 @@
     # Builds the firmware and copies it to the plugged-in keyboard half
     packages.flash = pkgs.writeShellApplication {
       name = "flash";
+      runtimeInputs = [
+        # Use Charm Gum for fancy interactivity
+        pkgs.gum
+      ];
       text = ''
         set +e
 
@@ -16,6 +20,9 @@
 
         # Enable nullglob so that non-matching globs have no output
         shopt -s nullglob
+
+        # Style
+        export GUM_SPIN_SPINNER="minidot"
 
         # Indent piped input 4 spaces
         indent() {
@@ -82,9 +89,10 @@
         echo
 
         # Flash by copying the firmware package
-        echo "Flashing firmware..."
-        cp -r "${config.packages.firmware}" "$kb" \
-          && echo "Done!" || echo "Error: Unable to flash firmware!"
+        gum spin --title "Flashing firmware..." \
+          -- cp -Tfr "${config.packages.firmware}" "$kb" \
+          && echo "Firmaware flashed!" \
+          || echo "Error flashing firmware!"
       '';
     };
   };
