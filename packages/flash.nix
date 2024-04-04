@@ -21,6 +21,9 @@
         # Enable nullglob so that non-matching globs have no output
         shopt -s nullglob
 
+        # Store a reference to the CLI args for use within functions
+        declare -a args=("$@")
+
         # Style
         export GUM_SPIN_SPINNER="minidot"
 
@@ -58,9 +61,19 @@
             indent < /proc/version >&2
           fi
 
+          # Check CLI args first
+          # Warn if any don't have a valid INFO_UF2
+          for disk in "''${args[@]}"; do
+            if grep -sq Glove80 "$disk"/INFO_UF2.TXT; then
+              echo "$disk"
+            else
+              echo "Not a Glove80 keyboard: $disk" >&2
+            fi
+          done
+
           # Print disks that have a matching INFO_UF2
           for disk in "''${disks[@]}"; do
-            if (grep -sq Glove80 "$disk"/INFO_UF2.TXT); then
+            if grep -sq Glove80 "$disk"/INFO_UF2.TXT; then
               echo "$disk"
             fi
           done
